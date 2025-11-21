@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .forms import DistratoForm
 from .models import Desligamento, Admissao, Distrato, Hierarquia, RelatorioRH, Caju
-from .services.notifications import notificar_admissao, notificar_desligamento
+from .services.notifications import notificar_admissao  # notificar_desligamento removido
 from .services.excel import (
     exportar_desligamento_excel,
     exportar_admissao_excel,
@@ -138,8 +138,9 @@ class DesligamentoAdmin(admin.ModelAdmin):
                 raise ValidationError("Já existe um desligamento registrado para este colaborador nessa data.")
         super().save_model(request, obj, form, change)
 
-        if is_new:
-            notificar_desligamento(obj, request.user)
+        # Envio de e-mail desativado para desligamento
+        # if is_new:
+        #     notificar_desligamento(obj, request.user)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
