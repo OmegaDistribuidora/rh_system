@@ -9,10 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .forms import DistratoForm
 from .models import Desligamento, Admissao, Distrato, Hierarquia, RelatorioRH, Caju
-
-# Envio de e-mail desativado
-# from .services.notifications import notificar_admissao
-
+from .services.notifications import notificar_admissao  # notificar_desligamento removido
 from .services.excel import (
     exportar_desligamento_excel,
     exportar_admissao_excel,
@@ -22,9 +19,8 @@ from .services.permission import users_visiveis_para
 from .services.relatorio import gerar_relatorio_pdf
 
 
-# ============================================================
-# FORMULÁRIOS CUSTOMIZADOS
-# ============================================================
+#-------------------------------------------------------------------------------------------------------------------
+# Formulários customizados
 
 class DesligamentoForm(forms.ModelForm):
     class Meta:
@@ -86,10 +82,8 @@ class CajuForm(forms.ModelForm):
             raise ValidationError(f"Já existe um registro de Caju com o e-mail {email}.")
         return cleaned_data
 
-
-# ============================================================
-# ADMIN: DESLIGAMENTO
-# ============================================================
+#-------------------------------------------------------------------------------------------------------------------
+#admin: Desligamento
 
 @admin.register(Desligamento)
 class DesligamentoAdmin(admin.ModelAdmin):
@@ -144,7 +138,7 @@ class DesligamentoAdmin(admin.ModelAdmin):
                 raise ValidationError("Já existe um desligamento registrado para este colaborador nessa data.")
         super().save_model(request, obj, form, change)
 
-        # Envio de e-mail totalmente desativado
+        # Envio de e-mail desativado para desligamento
         # if is_new:
         #     notificar_desligamento(obj, request.user)
 
@@ -193,10 +187,8 @@ class DesligamentoAdmin(admin.ModelAdmin):
     def has_module_permission(self, request):
         return self.has_view_permission(request)
 
-
-# ============================================================
-# ADMIN: ADMISSAO (SEM ENVIO DE E-MAIL)
-# ============================================================
+#-------------------------------------------------------------------------------------------------------------------
+#admin: Admissao
 
 @admin.register(Admissao)
 class AdmissaoAdmin(admin.ModelAdmin):
@@ -256,9 +248,8 @@ class AdmissaoAdmin(admin.ModelAdmin):
                 raise ValidationError("Já existe uma admissão registrada para este código nessa data.")
         super().save_model(request, obj, form, change)
 
-        # ENVIO DE E-MAIL DESATIVADO
-        # if is_new:
-        #     notificar_admissao(obj, request.user)
+        if is_new:
+            notificar_admissao(obj, request.user)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -299,10 +290,8 @@ class AdmissaoAdmin(admin.ModelAdmin):
     def has_module_permission(self, request):
         return self.has_view_permission(request)
 
-
-# ============================================================
-# ADMIN: DISTRATO
-# ============================================================
+#-------------------------------------------------------------------------------------------------------------------
+#admin: Distrato
 
 @admin.register(Distrato)
 class DistratoAdmin(admin.ModelAdmin):
@@ -314,11 +303,21 @@ class DistratoAdmin(admin.ModelAdmin):
     list_editable = ("status",)
 
     fieldsets = (
-        ("📌 Dados do Representante", {"fields": ("nome", "cpf", "rg")}),
-        ("📅 Datas", {"fields": ("data_admissao", "data_demissao")}),
-        ("💰 Totais (somente campos amarelos)", {"fields": ("total_geral", "total_ultimos_3_meses")}),
-        ("🏦 Dados Bancários", {"fields": ("banco", "agencia", "operacao", "conta_corrente", "titular", "telefone")}),
-        ("📊 Status", {"fields": ("status",)}),
+        ("📌 Dados do Representante", {
+            "fields": ("nome", "cpf", "rg")
+        }),
+        ("📅 Datas", {
+            "fields": ("data_admissao", "data_demissao")
+        }),
+        ("💰 Totais (somente campos amarelos)", {
+            "fields": ("total_geral", "total_ultimos_3_meses")
+        }),
+        ("🏦 Dados Bancários", {
+            "fields": ("banco", "agencia", "operacao", "conta_corrente", "titular", "telefone")
+        }),
+        ("📊 Status", {
+            "fields": ("status",)
+        }),
     )
 
     def get_changelist_formset(self, request, **kwargs):
@@ -374,15 +373,13 @@ class DistratoAdmin(admin.ModelAdmin):
         return exportar_distrato_excel(distrato)
 
     def has_view_permission(self, request, obj=None):
-        return True
+        return request.user.is_superuser or request.user.groups.filter(name="RH").exists()
 
     def has_module_permission(self, request):
-        return self.has_view_permission()
+        return self.has_view_permission(request)
 
-
-# ============================================================
-# ADMIN: HIERARQUIA
-# ============================================================
+#-------------------------------------------------------------------------------------------------------------------
+#admin: Hierarquia
 
 @admin.register(Hierarquia)
 class HierarquiaAdmin(admin.ModelAdmin):
@@ -404,10 +401,8 @@ class HierarquiaAdmin(admin.ModelAdmin):
     def has_module_permission(self, request):
         return self.has_view_permission(request)
 
-
-# ============================================================
-# ADMIN: RELATÓRIO RH
-# ============================================================
+#-------------------------------------------------------------------------------------------------------------------
+#admin: Relatorio
 
 @admin.register(RelatorioRH)
 class RelatorioRHAdmin(admin.ModelAdmin):
@@ -424,9 +419,8 @@ class RelatorioRHAdmin(admin.ModelAdmin):
         return gerar_relatorio_pdf()
 
 
-# ============================================================
-# ADMIN: CAJU
-# ============================================================
+#-------------------------------------------------------------------------------------------------------------------
+#admin: Caju
 
 @admin.register(Caju)
 class CajuAdmin(admin.ModelAdmin):
@@ -436,11 +430,17 @@ class CajuAdmin(admin.ModelAdmin):
     list_filter = ("data_cadastro",)
 
     fieldsets = (
-        ("📌 Dados do Caju", {"fields": ("cpf", "nome_completo", "email", "telefone")}),
-        ("📊 Registro", {"fields": ("data_cadastro",)}),
+        ("📌 Dados do Caju", {
+            "fields": ("cpf", "nome_completo", "email", "telefone")
+        }),
+        ("📊 Registro", {
+            "fields": ("data_cadastro",)
+        }),
     )
 
     readonly_fields = ("data_cadastro",)
 
     def get_queryset(self, request):
-        return super().get_queryset(request)
+        qs = super().get_queryset(request)
+        return qs
+    
