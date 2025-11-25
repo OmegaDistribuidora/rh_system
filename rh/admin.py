@@ -9,7 +9,9 @@ from django.utils.translation import gettext_lazy as _
 
 from .forms import DistratoForm
 from .models import Desligamento, Admissao, Distrato, Hierarquia, RelatorioRH, Caju
-from .services.notifications import notificar_admissao  # notificar_desligamento removido
+
+# from .services.notifications import notificar_admissao  # envio desativado
+
 from .services.excel import (
     exportar_desligamento_excel,
     exportar_admissao_excel,
@@ -138,7 +140,7 @@ class DesligamentoAdmin(admin.ModelAdmin):
                 raise ValidationError("Já existe um desligamento registrado para este colaborador nessa data.")
         super().save_model(request, obj, form, change)
 
-        # Envio de e-mail desativado para desligamento
+        # Envio desativado
         # if is_new:
         #     notificar_desligamento(obj, request.user)
 
@@ -248,8 +250,9 @@ class AdmissaoAdmin(admin.ModelAdmin):
                 raise ValidationError("Já existe uma admissão registrada para este código nessa data.")
         super().save_model(request, obj, form, change)
 
-        if is_new:
-            notificar_admissao(obj, request.user)
+        # Envio desativado
+        # if is_new:
+        #     notificar_admissao(obj, request.user)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -418,7 +421,6 @@ class RelatorioRHAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         return gerar_relatorio_pdf()
 
-
 #-------------------------------------------------------------------------------------------------------------------
 #admin: Caju
 
@@ -443,4 +445,3 @@ class CajuAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs
-    
