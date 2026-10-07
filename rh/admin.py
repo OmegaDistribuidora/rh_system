@@ -21,6 +21,9 @@ from .services.permission import users_visiveis_para
 from .services.relatorio import gerar_relatorio_pdf
 
 
+admin.site.login_template = "admin/sso_login.html"
+
+
 #-------------------------------------------------------------------------------------------------------------------
 # Formulários customizados
 
@@ -246,7 +249,10 @@ class AdmissaoAdmin(admin.ModelAdmin):
         is_new = obj.pk is None
         if is_new:
             obj.criado_por = request.user
-            if Admissao.objects.filter(codigo=obj.codigo, data_admissao=obj.data_admissao).exists():
+            if obj.codigo and Admissao.objects.filter(
+                codigo=obj.codigo,
+                data_admissao=obj.data_admissao,
+            ).exists():
                 raise ValidationError("Já existe uma admissão registrada para este código nessa data.")
         super().save_model(request, obj, form, change)
 

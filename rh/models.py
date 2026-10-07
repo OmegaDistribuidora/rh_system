@@ -67,7 +67,7 @@ class Desligamento(models.Model):
 
 #-------------------------------------------------------------------------------------------------------------------
 class Admissao(models.Model):
-    codigo = models.CharField("Código RCA", max_length=20, db_index=True)
+    codigo = models.CharField("Código RCA", max_length=20, db_index=True, blank=True)
     nome = models.CharField("Nome", max_length=150)
     nascimento = models.DateField("Nascimento", null=True, blank=True)
     naturalidade = models.CharField("Naturalidade", max_length=100, blank=True, null=True)
@@ -124,10 +124,16 @@ class Admissao(models.Model):
     class Meta:
         verbose_name = "Admissão"
         verbose_name_plural = "Admissões"
-        unique_together = ("codigo", "data_admissao") 
+        constraints = [
+            models.UniqueConstraint(
+                fields=("codigo", "data_admissao"),
+                condition=~models.Q(codigo=""),
+                name="rh_admissao_codigo_data_admissao_preenchidos_uniq",
+            ),
+        ]
 
     def __str__(self):
-        return f"{self.nome} ({self.codigo})"
+        return f"{self.nome} ({self.codigo})" if self.codigo else self.nome
 
     @property
     def supervisor(self):
@@ -204,6 +210,30 @@ class Hierarquia(models.Model):
 
     def __str__(self):
         return f"{self.coordenador.username} → {self.supervisor.username}"
+
+#-------------------------------------------------------------------------------------------------------------------
+class SsoTokenConsumido(models.Model):
+    jti_hash = models.CharField("Hash do identificador", max_length=64, unique=True)
+    expira_em = models.DateTimeField("Expira em", db_index=True)
+    consumido_em = models.DateTimeField("Consumido em", auto_now_add=True)
+    usuario = models.ForeignKey(
+        User,
+        verbose_name="Usuário",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    usuario_ecossistema = models.CharField(
+        "Usuário do Ecossistema", max_length=150, blank=True
+    )
+    login_destino = models.CharField("Login de destino", max_length=150)
+
+    class Meta:
+        verbose_name = "Token SSO consumido"
+        verbose_name_plural = "Tokens SSO consumidos"
+
+    def __str__(self):
+        return f"SSO para {self.login_destino} em {self.consumido_em:%d/%m/%Y %H:%M}"
 
 #-------------------------------------------------------------------------------------------------------------------
 class RelatorioRH(models.Model):

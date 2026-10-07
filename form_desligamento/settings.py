@@ -136,3 +136,31 @@ EMAIL_DESTINATARIOS = (
     if os.getenv("EMAIL_DESTINATARIOS")
     else []
 )
+
+# Login delegado pelo Ecossistema Omega. O login local permanece disponível
+# como contingência; habilitar o SSO não altera senhas ou permissões do Django.
+ECOSYSTEM_SSO_ENABLED = os.getenv("ECOSYSTEM_SSO_ENABLED", "False").lower() in {
+    "1", "true", "yes", "on"
+}
+ECOSYSTEM_SSO_ISSUER = os.getenv("ECOSYSTEM_SSO_ISSUER", "ecosistema-omega").strip()
+ECOSYSTEM_SSO_AUDIENCE = os.getenv("ECOSYSTEM_SSO_AUDIENCE", "rh_system").strip()
+ECOSYSTEM_SSO_SHARED_SECRET = os.getenv("ECOSYSTEM_SSO_SHARED_SECRET", "").strip()
+ECOSYSTEM_SSO_ADMIN_USERS = {
+    login.strip().lower()
+    for login in os.getenv("ECOSYSTEM_SSO_ADMIN_USERS", "").split(",")
+    if login.strip()
+}
+ECOSYSTEM_SSO_MAX_TOKEN_LIFETIME_SECONDS = int(
+    os.getenv("ECOSYSTEM_SSO_MAX_TOKEN_LIFETIME_SECONDS", "300")
+)
+ECOSYSTEM_SSO_CLOCK_SKEW_SECONDS = int(
+    os.getenv("ECOSYSTEM_SSO_CLOCK_SKEW_SECONDS", "5")
+)
+
+if ECOSYSTEM_SSO_ENABLED:
+    if len(ECOSYSTEM_SSO_SHARED_SECRET) < 32:
+        raise RuntimeError(
+            "ECOSYSTEM_SSO_SHARED_SECRET deve ter ao menos 32 caracteres quando o SSO está habilitado."
+        )
+    if not ECOSYSTEM_SSO_ISSUER or not ECOSYSTEM_SSO_AUDIENCE:
+        raise RuntimeError("Issuer e audience do SSO devem estar configurados.")

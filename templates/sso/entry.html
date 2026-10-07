@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Entrando no RH</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f4f6f9; color: #243447; margin: 0; }
+        main { max-width: 520px; margin: 12vh auto; padding: 32px; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px #0002; }
+        h1 { margin-top: 0; }
+        .error { color: #a61b1b; }
+        a { color: #1769aa; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Acesso ao RH</h1>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% elif not sso_enabled %}
+        <p class="error">O login pelo Ecossistema ainda não está habilitado neste ambiente.</p>
+    {% elif not exchange_attempted %}
+        <p id="status">Validando seu acesso pelo Ecossistema Omega…</p>
+        <form id="sso-form" method="post" action="{% url 'sso_exchange' %}">
+            {% csrf_token %}
+            <input id="sso-token" type="hidden" name="token">
+            <input type="hidden" name="next" value="{{ next_url }}">
+        </form>
+        <noscript>Ative o JavaScript para concluir o login pelo Ecossistema.</noscript>
+    {% endif %}
+    <p><a href="{% url 'admin:login' %}">Usar o login local</a></p>
+</main>
+{% if sso_enabled and not exchange_attempted %}
+<script>
+    (() => {
+        const params = new URLSearchParams(window.location.hash.slice(1));
+        const token = params.get("sso");
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+        if (!token) {
+            document.getElementById("status").textContent =
+                "Token de acesso ausente. Abra o sistema novamente pelo Ecossistema Omega.";
+            document.getElementById("status").className = "error";
+            return;
+        }
+        document.getElementById("sso-token").value = token;
+        document.getElementById("sso-form").requestSubmit();
+    })();
+</script>
+{% endif %}
+</body>
+</html>

@@ -85,7 +85,8 @@ def exportar_admissao_excel(admissao, modelo_path=None):
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    response["Content-Disposition"] = f'attachment; filename="admissao_{admissao.codigo}.xlsx"'
+    identificador = admissao.codigo or admissao.pk or "sem_codigo"
+    response["Content-Disposition"] = f'attachment; filename="admissao_{identificador}.xlsx"'
     wb.save(response)
     return response
 
