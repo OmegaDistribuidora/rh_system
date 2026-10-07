@@ -13,8 +13,8 @@ protegidas pelo middleware CSRF do Django.
 
 ## 1. Primeiro deploy do RH
 
-Faça o primeiro deploy com `ECOSYSTEM_SSO_ENABLED=False`. O arquivo
-`railway.json` executa automaticamente antes de cada versão:
+Faça o primeiro deploy com `ECOSYSTEM_SSO_ENABLED=False`. Antes de habilitar o
+SSO, execute no console do serviço:
 
 ```text
 python manage.py migrate
