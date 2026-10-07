@@ -59,13 +59,18 @@ class SsoLoginTests(TestCase):
         self.assertTemplateUsed(response, "admin/sso_login.html")
         self.assertContains(response, "window.location.replace")
 
-    def test_post_sem_csrf_e_rejeitado(self):
+    def test_troca_aceita_origin_nulo_pois_o_jwt_e_a_credencial(self):
         client = Client(enforce_csrf_checks=True)
 
-        response = client.post(reverse("sso_exchange"), {"token": self.token()})
+        response = client.post(
+            reverse("sso_exchange"),
+            {"token": self.token()},
+            HTTP_ORIGIN="null",
+        )
 
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(SsoTokenConsumido.objects.count(), 0)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(int(client.session["_auth_user_id"]), self.user.pk)
+        self.assertEqual(SsoTokenConsumido.objects.count(), 1)
 
     def test_fluxo_com_csrf_valido_abre_sessao(self):
         client = Client(enforce_csrf_checks=True)

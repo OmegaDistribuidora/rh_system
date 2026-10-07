@@ -4,6 +4,11 @@ O RH recebe um JWT de uso único emitido pelo Ecossistema Omega e, depois de
 validá-lo, abre uma sessão Django normal. Usuários, grupos e permissões continuam
 sendo administrados no RH.
 
+O endpoint de troca não usa a validação CSRF baseada em `Origin`, porque alguns
+navegadores enviam `Origin: null` no redirecionamento delegado. Ele aceita somente
+JWT assinado para este sistema, com expiração curta e identificador de uso único.
+As demais rotas continuam protegidas pelo middleware CSRF do Django.
+
 ## 1. Primeiro deploy do RH
 
 Faça o deploy com `ECOSYSTEM_SSO_ENABLED=False` e execute:

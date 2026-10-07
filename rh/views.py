@@ -5,6 +5,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_POST
 
@@ -52,6 +53,7 @@ def sso_entry(request):
 
 
 @sensitive_post_parameters("token")
+@csrf_exempt
 @never_cache
 @require_POST
 def sso_exchange(request):
