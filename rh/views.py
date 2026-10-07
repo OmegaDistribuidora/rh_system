@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+from django.contrib import admin
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -50,6 +51,21 @@ def sso_entry(request):
         },
         status=status,
     )
+
+
+@never_cache
+def admin_login_bridge(request):
+    # O Admin redireciona usuários já autenticados antes de renderizar sua
+    # tela de login. Nesse caso o fragmento #sso seria perdido. Renderizar a
+    # entrada SSO permite que o navegador processe o novo token e substitua a
+    # sessão atual; requisições anônimas e POSTs continuam no login original.
+    if (
+        request.method == "GET"
+        and request.user.is_authenticated
+        and settings.ECOSYSTEM_SSO_ENABLED
+    ):
+        return sso_entry(request)
+    return admin.site.login(request)
 
 
 @sensitive_post_parameters("token")

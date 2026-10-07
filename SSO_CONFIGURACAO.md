@@ -49,7 +49,8 @@ Chave SSO=rh_system
 ```
 
 O endereço antigo `/admin/login/` também reconhece o token e encaminha para o
-fluxo SSO. Usar `/sso/` diretamente deixa a configuração mais explícita.
+fluxo SSO, inclusive quando já existe outra sessão ativa. Usar `/sso/`
+diretamente deixa a configuração mais explícita.
 
 No serviço do Ecossistema, configure:
 

@@ -58,6 +58,15 @@ class SsoLoginTests(TestCase):
         self.assertTemplateUsed(response, "admin/sso_login.html")
         self.assertContains(response, "window.location.replace")
 
+    def test_login_admin_processa_novo_token_mesmo_com_sessao_ativa(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("admin:login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "sso/entry.html")
+        self.assertContains(response, "window.location.hash")
+
     def test_troca_aceita_origin_nulo_pois_o_jwt_e_a_credencial(self):
         client = Client(enforce_csrf_checks=True)
 
@@ -106,6 +115,30 @@ class SsoLoginTests(TestCase):
         self.assertEqual(segunda.status_code, 401)
         self.assertEqual(Session.objects.filter(session_key__startswith="sso").count(), 1)
 
+    def test_novo_sso_substitui_usuario_da_sessao_anterior(self):
+        segundo_usuario = User.objects.create_user(
+            username="arleilson",
+            password="outra-senha-local",
+            is_staff=True,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("sso_exchange"),
+            {
+                "token": self.token(
+                    targetLogin=segundo_usuario.username,
+                    ecosystemUsername=segundo_usuario.username,
+                )
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            int(self.client.session["_auth_user_id"]),
+            segundo_usuario.pk,
+        )
+
     def test_rejeita_audience_incorreta(self):
         response = self.client.post(
             reverse("sso_exchange"),
@@ -143,6 +176,33 @@ class SsoLoginTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(int(self.client.session["_auth_user_id"]), self.user.pk)
+
+    def test_administrador_do_ecossistema_nao_promove_usuario_comum(self):
+        response = self.client.post(
+            reverse("sso_exchange"),
+            {"token": self.token(ecosystemIsAdmin=True)},
+        )
+
+        self.user.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(self.user.is_superuser)
+
+    def test_superusuario_rejeita_administrador_com_login_diferente(self):
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_superuser"])
+
+        response = self.client.post(
+            reverse("sso_exchange"),
+            {
+                "token": self.token(
+                    ecosystemIsAdmin=True,
+                    ecosystemUsername="outro-administrador",
+                )
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_usuario_sem_acesso_ao_admin_e_rejeitado(self):
         self.user.is_staff = False
