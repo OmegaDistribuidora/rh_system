@@ -11,7 +11,8 @@ As demais rotas continuam protegidas pelo middleware CSRF do Django.
 
 ## 1. Primeiro deploy do RH
 
-Faça o deploy com `ECOSYSTEM_SSO_ENABLED=False` e execute:
+Faça o primeiro deploy com `ECOSYSTEM_SSO_ENABLED=False`. O arquivo
+`railway.json` executa automaticamente antes de cada versão:
 
 ```text
 python manage.py migrate
