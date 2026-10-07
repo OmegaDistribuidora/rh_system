@@ -1,1 +1,1 @@
-web: gunicorn form_desligamento.wsgi
+web: python manage.py migrate --noinput && gunicorn form_desligamento.wsgi
