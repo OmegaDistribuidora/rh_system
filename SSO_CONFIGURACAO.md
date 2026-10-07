@@ -7,7 +7,9 @@ sendo administrados no RH.
 O endpoint de troca não usa a validação CSRF baseada em `Origin`, porque alguns
 navegadores enviam `Origin: null` no redirecionamento delegado. Ele aceita somente
 JWT assinado para este sistema, com expiração curta e identificador de uso único.
-As demais rotas continuam protegidas pelo middleware CSRF do Django.
+O hash desse identificador é registrado na tabela nativa `django_session`,
+impedindo reutilização inclusive entre réplicas. As demais rotas continuam
+protegidas pelo middleware CSRF do Django.
 
 ## 1. Primeiro deploy do RH
 

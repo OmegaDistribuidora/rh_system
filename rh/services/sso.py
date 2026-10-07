@@ -6,11 +6,10 @@ import jwt
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.models import User
+from django.contrib.sessions.models import Session
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.views.decorators.debug import sensitive_variables
-
-from rh.models import SsoTokenConsumido
 
 
 logger = logging.getLogger(__name__)
@@ -78,18 +77,22 @@ def autenticar_via_sso(request, token):
         if not ecosystem_is_admin or not (same_login or allowlisted):
             raise SsoAuthenticationError("SSO sem autorização administrativa")
 
+    # Registra o uso na tabela nativa de sessões, já existente em todas as
+    # instalações deste projeto. O hash evita persistir o jti original.
     jti_hash = hashlib.sha256(jti.encode("utf-8")).hexdigest()
+    replay_key = f"sso{jti_hash[:37]}"
     expiration = datetime.fromtimestamp(expires_at, tz=datetime_timezone.utc)
 
     try:
         with transaction.atomic():
-            SsoTokenConsumido.objects.filter(expira_em__lt=timezone.now()).delete()
-            SsoTokenConsumido.objects.create(
-                jti_hash=jti_hash,
-                expira_em=expiration,
-                usuario=user,
-                usuario_ecossistema=ecosystem_username[:150],
-                login_destino=target_login,
+            Session.objects.filter(
+                session_key__startswith="sso",
+                expire_date__lt=timezone.now(),
+            ).delete()
+            Session.objects.create(
+                session_key=replay_key,
+                session_data="",
+                expire_date=expiration,
             )
     except IntegrityError as exc:
         raise SsoAuthenticationError("Token SSO já utilizado") from exc

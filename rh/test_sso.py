@@ -3,10 +3,9 @@ import uuid
 
 import jwt
 from django.contrib.auth.models import User
+from django.contrib.sessions.models import Session
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
-
-from .models import SsoTokenConsumido
 
 
 SSO_SECRET = "segredo-de-teste-com-mais-de-trinta-e-dois-caracteres"
@@ -70,7 +69,7 @@ class SsoLoginTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(int(client.session["_auth_user_id"]), self.user.pk)
-        self.assertEqual(SsoTokenConsumido.objects.count(), 1)
+        self.assertEqual(Session.objects.filter(session_key__startswith="sso").count(), 1)
 
     def test_fluxo_com_csrf_valido_abre_sessao(self):
         client = Client(enforce_csrf_checks=True)
@@ -95,7 +94,7 @@ class SsoLoginTests(TestCase):
 
         self.assertRedirects(response, reverse("admin:index"), fetch_redirect_response=False)
         self.assertEqual(int(self.client.session["_auth_user_id"]), self.user.pk)
-        self.assertEqual(SsoTokenConsumido.objects.count(), 1)
+        self.assertEqual(Session.objects.filter(session_key__startswith="sso").count(), 1)
 
     def test_token_nao_pode_ser_reutilizado(self):
         token = self.token()
@@ -105,7 +104,7 @@ class SsoLoginTests(TestCase):
 
         self.assertEqual(primeira.status_code, 302)
         self.assertEqual(segunda.status_code, 401)
-        self.assertEqual(SsoTokenConsumido.objects.count(), 1)
+        self.assertEqual(Session.objects.filter(session_key__startswith="sso").count(), 1)
 
     def test_rejeita_audience_incorreta(self):
         response = self.client.post(
